@@ -1,3 +1,4 @@
+/* Leon Augusto Okida Gonçalves - GRR20190365 */
 #ifndef ___OPERATION___
 #define ___OPERATION___
 

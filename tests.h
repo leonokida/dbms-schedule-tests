@@ -1,3 +1,4 @@
+/* Leon Augusto Okida Gonçalves - GRR20190365 */
 #include "operation.h"
 
 /*
