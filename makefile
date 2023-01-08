@@ -8,7 +8,7 @@ util.o: util.c util.h
 	gcc -c util.c $(CFLAGS)
 
 tests.o: tests.c tests.h util.h operation.h
-	gcc -c parcial.c $(CFLAGS)
+	gcc -c tests.c $(CFLAGS)
 
 escalona: escalona.c $(objects) operation.h
 	gcc escalona.c -o escalona $(objects) $(CFLAGS)
