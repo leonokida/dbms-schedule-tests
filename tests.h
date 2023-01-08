@@ -7,6 +7,6 @@ Checks if the schedule is serializable by conflict
 int test_conflict(operation_t operations[], int operationIndex, int transactionIds[], int numTransactions);
 
 /*
-Checks if the schedule is equivalent by vision
+Checks if the schedule is equivalent by view
 */
-int test_vision(operation_t operations[], int operationIndex, int transactionIds[], int numTransactions);
+int test_view(operation_t operations[], int operationIndex, int transactionIds[], int numTransactions);

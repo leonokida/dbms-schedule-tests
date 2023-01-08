@@ -57,10 +57,10 @@ int main() {
                 /* Adds index to be used in adjacency matrix */
                 adds_index(operations, operationIndex, transactionIds, numTransactions);
 
-                /* Tests if it's serializable by conflict or equivalent by vision */
-                int conflict, vision;
+                /* Tests if it's serializable by conflict or equivalent by view */
+                int conflict, view;
                 conflict = test_conflict(operations, operationIndex, transactionIds, numTransactions);
-                vision = test_vision(operations, operationIndex, transactionIds, numTransactions);
+                view = test_view(operations, operationIndex, transactionIds, numTransactions);
 
                 /* Prints results */
                 printf("%d ", scheduleCounter);
@@ -75,7 +75,7 @@ int main() {
                 else
                     printf("NS ");
 
-                if (vision)
+                if (view)
                     printf("SV\n");
                 else
                     printf("NV\n");

@@ -6,11 +6,11 @@
 
 #include "util.h"
 
-typedef struct trio {
+typedef struct wrwDep {
     int i;
     int j;
     int k;
-} trio;
+} wrwDep;
 
 /*
 Creates adjacency matrix (inline matrix)
@@ -83,33 +83,42 @@ int *copy_matrix(int *adjMatrix, int finalIndex) {
 }
 
 /*
-Creates all possible graphs by selecting only one of the pair of arcs created by each occurences of Tk (see test_vision function)
+Creates all possible graphs by selecting only one of the pair of arcs created by each occurences of a Tk (see test_view function)
 */
-int runs_test(int *adjMatrix, int numTransactions, trio triosArray[], int numTrios, int i) {
-    if (i < numTrios) {
-        /* Creates two copies */
-        int *cpy1, *cpy2;
-        
-        /* Tests removing arc from Tk to Ti */
-        cpy1 = copy_matrix(adjMatrix, numTransactions);
-        int matrixIndex = triosArray[i].k * numTransactions + triosArray[i].i;
-        if (cpy1[matrixIndex] > 0)
+int runs_test(int *adjMatrix, int numTransactions, wrwDep wrwDepsArray[], int numwrwDeps, int i) {
+    if (i < numwrwDeps) {
+        int indexKtoI, indexJtoK;
+        indexKtoI = wrwDepsArray[i].k * numTransactions + wrwDepsArray[i].i;
+        indexJtoK = wrwDepsArray[i].j * numTransactions + wrwDepsArray[i].k;
+
+        /* If there are arcs created to both nodes I and K */
+        if ((adjMatrix[indexKtoI] >= 1) && (adjMatrix[indexJtoK]) >= 1) {
+            /* Creates two copies */
+            int *cpy1, *cpy2;
+            
+            /* Tests removing arc from Tk to Ti */
+            cpy1 = copy_matrix(adjMatrix, numTransactions);
+            int matrixIndex = wrwDepsArray[i].k * numTransactions + wrwDepsArray[i].i;
             cpy1[matrixIndex] -= 1;
-        if (runs_test(cpy1, numTransactions, triosArray, numTrios, i+1)) {
+            if (runs_test(cpy1, numTransactions, wrwDepsArray, numwrwDeps, i+1)) {
+                free(cpy1);
+                return 1;
+            }
             free(cpy1);
-            return 1;
-        }
-        free(cpy1);
-        /* Tests removing arc from Tj to Tk */
-        cpy2 = copy_matrix(adjMatrix, numTransactions);
-        matrixIndex = triosArray[i].j * numTransactions + triosArray[i].k;
-        if (cpy2[matrixIndex] > 0)
+            /* Tests removing arc from Tj to Tk */
+            cpy2 = copy_matrix(adjMatrix, numTransactions);
+            matrixIndex = wrwDepsArray[i].j * numTransactions + wrwDepsArray[i].k;
             cpy2[matrixIndex] -= 1;
-        if (runs_test(cpy2, numTransactions, triosArray, numTrios, i+1)) {
+            if (runs_test(cpy2, numTransactions, wrwDepsArray, numwrwDeps, i+1)) {
+                free(cpy2);
+                return 1;
+            }
             free(cpy2);
-            return 1;
         }
-        free(cpy2);
+        else {
+            /* Does not remove arc, as there's no choice */
+            return runs_test(adjMatrix, numTransactions, wrwDepsArray, numwrwDeps, i+1);
+        }
 
         /* Backtracks */
         return 0;
@@ -120,7 +129,7 @@ int runs_test(int *adjMatrix, int numTransactions, trio triosArray[], int numTri
     return !has_cycle(adjMatrix, numTransactions, nodesExplored, indexNodes, 0);
 }
 
-int test_vision(operation_t operations[], int operationIndex, int transactionIds[], int numTransactions) {
+int test_view(operation_t operations[], int operationIndex, int transactionIds[], int numTransactions) {
     /* Matrix with two more nodes (start and final transactions) */
     int finalIndex = numTransactions + 1;
     numTransactions+=2;
@@ -131,8 +140,8 @@ int test_vision(operation_t operations[], int operationIndex, int transactionIds
     int numLastWrites = 0;
 
     /* Registers all situations where there's a Tk transaction (see loop below) */
-    trio triosArray[100];
-    int numTrios = 0;
+    wrwDep wrwDepsArray[100];
+    int numwrwDeps = 0;
 
     /* Iterates through the operations (j), from last to first */
     for (int j = operationIndex - 1; j >= 0; j--) {
@@ -141,7 +150,7 @@ int test_vision(operation_t operations[], int operationIndex, int transactionIds
             if (!is_in_write_array(lastWrites, operations[j].attr, numLastWrites)) {
                 /* Tf reads what operation j wrote */
                 int adjMatrixIndex = (operations[j].matrixIndex + 1) * numTransactions + finalIndex;
-                adjMatrix[adjMatrixIndex] = 1;
+                adjMatrix[adjMatrixIndex] += 1;
 
                 /* There's a final write operation registered for the attribute */
                 lastWrites[numLastWrites] = operations[j].attr;
@@ -156,12 +165,12 @@ int test_vision(operation_t operations[], int operationIndex, int transactionIds
                         (operations[k].id != operations[j].id)
                     ) {
                         adjMatrixIndex = (operations[k].matrixIndex + 1) * numTransactions + operations[j].matrixIndex+1;
-                        adjMatrix[adjMatrixIndex] = 1;
+                        adjMatrix[adjMatrixIndex] += 1;
 
-                        triosArray[numTrios].i = operations[j].matrixIndex+1;
-                        triosArray[numTrios].j = finalIndex;
-                        triosArray[numTrios].k = operations[k].matrixIndex+1;
-                        numTrios++;
+                        wrwDepsArray[numwrwDeps].i = operations[j].matrixIndex+1;
+                        wrwDepsArray[numwrwDeps].j = finalIndex;
+                        wrwDepsArray[numwrwDeps].k = operations[k].matrixIndex+1;
+                        numwrwDeps++;
                     }
                 }
             }
@@ -204,15 +213,15 @@ int test_vision(operation_t operations[], int operationIndex, int transactionIds
                 ) {
                     if (transI != 0) {
                         int adjMatrixIndex1 = (operations[k].matrixIndex + 1) * numTransactions + transI;
-                        adjMatrix[adjMatrixIndex1] = 1;
+                        adjMatrix[adjMatrixIndex1] += 1;
                     }
                     int adjMatrixIndex2 = transJ * numTransactions + (operations[k].matrixIndex + 1);
-                    adjMatrix[adjMatrixIndex2] = 1;
+                    adjMatrix[adjMatrixIndex2] += 1;
 
-                    triosArray[numTrios].i = transI;
-                    triosArray[numTrios].j = transJ;
-                    triosArray[numTrios].k = operations[k].matrixIndex+1;
-                    numTrios++;
+                    wrwDepsArray[numwrwDeps].i = transI;
+                    wrwDepsArray[numwrwDeps].j = transJ;
+                    wrwDepsArray[numwrwDeps].k = operations[k].matrixIndex+1;
+                    numwrwDeps++;
                 }
             }
         }
@@ -220,7 +229,7 @@ int test_vision(operation_t operations[], int operationIndex, int transactionIds
 
     /* Runs tests for all possible graphs */
     /* If it's cycle free in all of them, it's equivalent by view */
-    int cycleFree = runs_test(adjMatrix, numTransactions, triosArray, numTrios, 0);
+    int cycleFree = runs_test(adjMatrix, numTransactions, wrwDepsArray, numwrwDeps, 0);
 
     free(adjMatrix);
     return cycleFree;
